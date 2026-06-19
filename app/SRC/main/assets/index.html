@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Грамотей игра-викторина</title>
+    <style>
+        :root {
+            --bg-color: #1b2a4e;
+            --screen-bg: rgba(255, 255, 255, 0.08);
+            --text-color: #ffffff;
+            --btn-grad-1: #4e6e9e;
+            --btn-grad-2: #2c4b7c;
+            --btn-shadow: #102231;
+            --card-bg: rgba(0, 0, 0, 0.6);
+            --border-color: rgba(255, 255, 255, 0.2);
+            --stat-label-color: rgba(255, 255, 255, 0.7);
+            --fs-btn-bg: rgba(255, 255, 255, 0.1);
+            --fs-btn-color: #ffffff;
+            --toast-bg: #4338ca;
+            --mark-5: #2ecc71; --mark-4: #f1c40f; --mark-3: #e67e22; --mark-2: #e74c3c; 
+        }
+
+        .light-theme {
+            --bg-color: #e0e7ff;
+            --screen-bg: rgba(255, 255, 255, 0.85);
+            --text-color: #1b2a4e;
+            --btn-grad-1: #6366f1;
+            --btn-grad-2: #4338ca;
+            --btn-shadow: #2e2e7a;
+            --card-bg: #ffffff;
+            --border-color: rgba(67, 56, 202, 0.2);
+            --stat-label-color: #4338ca;
+            --fs-btn-bg: #1b2a4e;
+            --fs-btn-color: #ffffff;
+            --toast-bg: #6366f1;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            width: 100vw; height: 100vh;
+            background: var(--bg-color); 
+            display: flex; justify-content: center; align-items: center; 
+            overflow: hidden; touch-action: manipulation;
+            transition: background 0.3s ease;
+        }
+
+        #bgCanvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+
+        /* --- ЭКРАН ЗАГРУЗКИ (SPLASH SCREEN) --- */
+        #splashScreen {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: #000000;
+            z-index: 9999;
+            display: flex; justify-content: center; align-items: center;
+            transition: opacity 0.6s ease;
+        }
+
+        #splashLogo {
+            width: 390px;  
+            height: 390px; 
+            border-radius: 32px;
+            opacity: 0;
+            transition: opacity 0.8s ease, transform 0.8s ease;
+            transform: scale(0.9);
+        }
+        /* -------------------------------------- */
+
+        /* --- СТИЛИ ПОЛЗУНКОВ НАСТРОЕК (MIXER) --- */
+        .setting-row {
+            margin-bottom: 12px;
+            text-align: left;
+            width: 100%;
+        }
+        .setting-label {
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-color);
+            font-size: 11px;
+            font-weight: 800;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            opacity: 0.9;
+        }
+        .slider-input {
+            width: 100%;
+            -webkit-appearance: none;
+            height: 8px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.15);
+            outline: none;
+            transition: background 0.3s;
+        }
+        .light-theme .slider-input {
+            background: rgba(27, 42, 78, 0.12);
+        }
+        .slider-input::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, var(--btn-grad-1), var(--btn-grad-2));
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.4);
+            border: 2px solid #ffffff;
+        }
+        /* -------------------------------------- */
+
+        .screen {
+            position: relative; z-index: 10; 
+            width: 90%; max-width: 380px;
+            background: var(--screen-bg); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border-radius: 30px; padding: 20px 15px; 
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            display: flex; flex-direction: column;
+            transition: opacity 0.3s ease;
+        }
+        
+        h1 { font-size: 28px; margin-bottom: 15px; text-align: center; color: var(--text-color); } 
+        h2 { font-size: 22px; margin-bottom: 15px; text-align: center; color: var(--text-color); } 
+
+        .btn {
+            background: linear-gradient(145deg, var(--btn-grad-1), var(--btn-grad-2));
+            border: 1px solid rgba(255,255,255,0.2); border-radius: 15px;
+            color: white !important; font-weight: bold; text-transform: uppercase;
+            cursor: pointer; box-shadow: 0 4px 0 var(--btn-shadow);
+            transition: all 0.1s ease; display: flex; justify-content: center; align-items: center;
+            width: 100%; margin-bottom: 12px; padding: 10px; font-size: 14px;
+            text-decoration: none;
+        }
+        .btn:active { transform: translateY(2px); box-shadow: 0 2px 0 var(--btn-shadow); }
+        
+        .mode-btn { padding: 12px 8px; font-size: 15px; min-height: 50px; }
+        .back-btn { margin-top: 5px; font-size: 13px; padding: 8px; }
+        
+        .reset-btn { background: linear-gradient(145deg, #c62828, #8e0000); box-shadow: 0 4px 0 #4a0000; margin-top: 10px; font-size: 12px; }
+
+        /* Стили кнопок переключения длины */
+        .game-len-btn.active, .prof-len-btn.active, .hb-btn.active {
+            background: linear-gradient(145deg, #2ecc71, #27ae60) !important;
+            box-shadow: 0 4px 0 #1e7e43 !important;
+            border-color: rgba(255, 255, 255, 0.4) !important;
+        }
+
+        .hb-btn { padding: 10px 6px; font-size: 13px; margin-bottom: 0; }
+
+        .rules-content {
+            background: rgba(0, 0, 0, 0.15); border-radius: 18px; padding: 15px 12px; margin-bottom: 15px;
+            border: 1px solid var(--border-color); color: var(--text-color); font-size: 13px; line-height: 1.4;
+            overflow-y: auto; max-height: 200px; text-align: left;
+        }
+        .rules-content h3 { margin-bottom: 10px; font-size: 15px; color: var(--text-color); text-align: center; font-weight: 800; text-transform: uppercase; }
+        .rules-content b { color: var(--text-color); }
+
+        #recordToast {
+            position: fixed; top: -120px; left: 50%; transform: translateX(-50%);
+            background: var(--toast-bg); color: #ffffff; padding: 15px 35px; border-radius: 40px;
+            font-weight: 900; z-index: 9999; transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.6); border: 3px solid #ffffff;
+        }
+        #recordToast.show { top: 40px; }
+
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 3000;
+            display: none; justify-content: center; align-items: center;
+            backdrop-filter: blur(8px);
+        }
+        .modal {
+            background: #2c4b7c; border: 2px solid var(--border-color);
+            padding: 30px; border-radius: 25px; width: 85%; max-width: 320px;
+            text-align: center; color: white;
+        }
+
+        .variants-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 15px; }
+        .variant-btn { font-size: 16px; padding: 12px; margin-bottom: 0; }
+        .variant-btn.correct { background: linear-gradient(145deg, #2e7d32, #1b5e20) !important; box-shadow: 0 3px 0 #0d2e11 !important; }
+        .variant-btn.wrong { background: linear-gradient(145deg, #c62828, #8e0000) !important; box-shadow: 0 3px 0 #4a0000 !important; }
+
+        .question-area { background: rgba(0, 0, 0, 0.15); border-radius: 18px; padding: 20px 10px; margin-bottom: 15px; border: 1px solid var(--border-color); }
+        .word { font-size: 22px; font-weight: 800; color: var(--text-color); text-align: center; line-height: 1.2; }
+        
+        .stat-card { flex: 1; background: var(--card-bg); padding: 8px; border-radius: 12px; text-align: center; border: 1px solid var(--border-color); }
+        .stat-label { font-size: 9px; font-weight: 800; display: block; color: var(--stat-label-color); text-transform: uppercase; }
+        .stat-value { font-size: 16px; font-weight: 900; color: var(--text-color); }
+        
+        .profile-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; }
+        .profile-item { 
+            display: flex; justify-content: space-between; align-items: center;
+            background: var(--card-bg); padding: 10px 15px; border-radius: 12px;
+            border: 1px solid var(--border-color); color: var(--text-color);
+        }
+        .mark-val { font-weight: 900; font-size: 18px; }
+
+        .final-mark-container { text-align: center; padding: 10px; }
+        .final-mark-circle { 
+            width: 85px; height: 85px; border-radius: 50%; 
+            display: inline-flex; align-items: center; justify-content: center;
+            font-size: 44px; font-weight: 900; color: white;
+            margin: 15px 0; border: 5px solid rgba(255,255,255,0.4);
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+        }
+
+        .particle { position: fixed; pointer-events: none; z-index: 9999; border-radius: 50%; }
+    </style>
+</head>
+<body>
+    <audio id="bgMusic" src="music.mp3"></audio>
+    <audio id="clickSound" src="click.mp3" preload="auto"></audio>
+    <audio id="correctSound" src="correct.mp3" preload="auto"></audio>
+    <audio id="wrongSound" src="wrong.mp3" preload="auto"></audio>
+
+    <div id="splashScreen">
+        <img id="splashLogo" src="ic_launcher.png" alt="Грамотей лого">
+    </div>
+
+    <canvas id="bgCanvas"></canvas>
+    <div id="recordToast">🏆 НОВЫЙ РЕКОРД!</div>
+
+    <div id="confirmModal" class="modal-overlay">
+        <div class="modal">
+            <h3>Сбросить оценки?</h3>
+            <p style="margin: 15px 0 25px; font-size: 14px; opacity: 0.8;">Все ваши рекорды будут удалены навсегда.</p>
+            <div style="display: flex; gap: 12px;">
+                <button class="btn" style="background: #555; margin:0;" onclick="closeModal()">Отмена</button>
+                <button class="btn reset-btn" style="margin:0;" onclick="executeReset()">Сбросить</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="mainMenu" class="screen" style="display: none; opacity: 0;">
+        <h1>Грамотей<br>игра-викторина</h1>
+        <button class="btn" onclick="goTo('modeScreen')">Играть</button>
+        <button class="btn" onclick="openHandbook()">Справочник</button>
+        <button class="btn" onclick="showProfile()">Профиль</button>
+        <button class="btn" onclick="goTo('aboutScreen')">О разработчике</button>
+        <button class="btn" onclick="goTo('settingsScreen')">Настройки</button>
+    </div>
+
+    <div id="modeScreen" class="screen" style="display: none;">
+        <h2>Режимы</h2>
+        <p style="text-align:center; color:var(--text-color); font-size:11px; margin-bottom:5px; font-weight:800; text-transform:uppercase; opacity:0.8;">Длина раунда:</p>
+        <div style="display: flex; gap: 6px; margin-bottom: 15px;">
+            <button class="btn game-len-btn active" data-len="25" onclick="setGameLength(25)">25</button>
+            <button class="btn game-len-btn" data-len="50" onclick="setGameLength(50)">50</button>
+            <button class="btn game-len-btn" data-len="100" onclick="setGameLength(100)">100</button>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <button class="btn mode-btn" onclick="startGame('vowels')">Гласные</button>
+            <button class="btn mode-btn" onclick="startGame('nn')">Н / НН</button>
+            <button class="btn mode-btn" onclick="startGame('prepri')">ПРЕ / ПРИ</button>
+            <button class="btn mode-btn" onclick="startGame('signs')">Ъ / Ь</button>
+            <button class="btn mode-btn" style="grid-column: 1 / -1;" onclick="startGame('ne')">НЕ (слитно/раздельно)</button>
+        </div>
+        <button class="btn back-btn" onclick="goTo('mainMenu')">Назад</button>
+    </div>
+
+    <div id="handbookScreen" class="screen" style="display: none;">
+        <h2>Справочник</h2>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px;">
+            <button class="btn hb-btn" data-mode="vowels" onclick="showRule('vowels', this)">Гласные</button>
+            <button class="btn hb-btn" data-mode="nn" onclick="showRule('nn', this)">Н / НН</button>
+            <button class="btn hb-btn" data-mode="prepri" onclick="showRule('prepri', this)">ПРЕ / ПРИ</button>
+            <button class="btn hb-btn" data-mode="signs" onclick="showRule('signs', this)">Ъ / Ь</button>
+            <button class="btn hb-btn" data-mode="ne" style="grid-column: 1 / -1;" onclick="showRule('ne', this)">НЕ (слитно/раздельно)</button>
+        </div>
+        <div id="ruleTextContainer" class="rules-content"></div>
+        <button class="btn back-btn" onclick="goTo('mainMenu')">Назад</button>
+    </div>
+
+    <div id="profileScreen" class="screen" style="display: none;">
+        <h2>Лучшие оценки</h2>
+        <div style="display: flex; gap: 6px; margin-bottom: 15px;">
+            <button class="btn prof-len-btn active" data-len="25" onclick="changeProfileLength(25)">25 сл.</button>
+            <button class="btn prof-len-btn" data-len="50" onclick="changeProfileLength(50)">50 сл.</button>
+            <button class="btn prof-len-btn" data-len="100" onclick="changeProfileLength(100)">100 сл.</button>
+        </div>
+        <div class="profile-list" id="profileData"></div>
+        <button class="btn back-btn" onclick="goTo('mainMenu')">Назад</button>
+        <button class="btn reset-btn" onclick="openModal()">Сбросить всё</button>
+    </div>
+
+    <div id="aboutScreen" class="screen" style="display: none;">
+        <h2>О разработчике</h2>
+        <div style="display: flex; flex-direction: column; padding: 10px 0;">
+            <a href="https://donmig-company.tilda.ws" target="_blank" class="btn">Все мои ссылки</a>
+            <a href="https://t.me/DONMIG_TG" target="_blank" class="btn">Мой телеграм</a>
+            <a href="https://pay.cloudtips.ru/p/c7811590" target="_blank" class="btn">Поддержать донатом</a>
+        </div>
+        <button class="btn back-btn" onclick="goTo('mainMenu')">Назад</button>
+    </div>
+
+    <div id="settingsScreen" class="screen" style="display: none;">
+        <h2>Настройки</h2>
+        
+        <div class="setting-row">
+            <div class="setting-label"><span>Громкость музыки</span><span id="val_music">15%</span></div>
+            <input type="range" min="0" max="100" value="15" class="slider-input" id="slider_music" oninput="updateVol('music', this.value)">
+        </div>
+        
+        <div class="setting-row">
+            <div class="setting-label"><span>Громкость клика</span><span id="val_click">15%</span></div>
+            <input type="range" min="0" max="100" value="15" class="slider-input" id="slider_click" oninput="updateVol('click', this.value)">
+        </div>
+        
+        <div class="setting-row">
+            <div class="setting-label"><span>Звук победы</span><span id="val_correct">15%</span></div>
+            <input type="range" min="0" max="100" value="15" class="slider-input" id="slider_correct" oninput="updateVol('correct', this.value)">
+        </div>
+        
+        <div class="setting-row">
+            <div class="setting-label"><span>Звук проигрыша</span><span id="val_wrong">15%</span></div>
+            <input type="range" min="0" max="100" value="15" class="slider-input" id="slider_wrong" oninput="updateVol('wrong', this.value)">
+        </div>
+
+        <p style="text-align:center; color:var(--text-color); font-size:10px; margin: 5px 0 5px; font-weight:800; text-transform:uppercase; opacity:0.8;">Тема оформления:</p>
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <button class="btn" style="flex:1; margin-bottom:0;" onclick="document.body.classList.add('light-theme')">Светлая</button>
+            <button class="btn" style="flex:1; margin-bottom:0;" onclick="document.body.classList.remove('light-theme')">Темная</button>
+        </div>
+        <button class="btn reset-btn" style="margin-bottom: 10px;" onclick="resetSettings()">Сбросить настройки</button>
+        <button class="btn back-btn" onclick="goTo('mainMenu')">В меню</button>
+    </div>
+
+    <div id="gameScreen" class="screen" style="display: none;">
+        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+            <div class="stat-card"><span class="stat-label">ХОД</span><span id="qCounter" class="stat-value">1/25</span></div>
+            <div class="stat-card"><span class="stat-label">СЧЁТ</span><span id="score" class="stat-value">0</span></div>
+            <div class="stat-card"><span class="stat-label">РЕКОРД</span><span id="bestScore" class="stat-value">0</span></div>
+        </div>
+        <div class="question-area"><div class="word" id="wordDisplay">...</div></div>
+        <div id="variantsContainer" class="variants-grid"></div>
+        <div style="display: flex; gap: 8px;">
+            <button class="btn" style="flex:1; font-size:12px" id="restartBtn">Заново</button>
+            <button class="btn" style="flex:1; font-size:12px" onclick="goTo('mainMenu')">Меню</button>
+        </div>
+    </div>
+
+<script>
+    // --- ПОЛНЫЕ БАЗЫ СЛОВ ---
+    const vBase = [
+        "РАЗР_ДИТЬ (заряд):Я:Я,Е,И,А", "РАЗР_ДИТЬ (грядку):Е:Е,Я,И,А", "ПОС_ДЕТЬ (на скамье):И:И,Е,Я,А", "ПОС_ДЕТЬ (от старости):Е:Е,И,Я,А",
+        "З_РНИЦА:A:А,О,Е,И", "З_РЬКА:О:А,О,Е,И", "ОЗ_РЯТЬ:A:А,О,Е,И", "З_РЯ:A:А,О,Е,И", "З_РЕВАТЬ:A:А,О,Е,И", "ЛУЧЕЗ_РНЫЙ:A:А,О,Е,И", "З_РЕНЬКА:О:А,О,Е,И", "ПОДОЗР_ВАНИЕ:Е:Е,И,Я,А", "Г_РЕТЬ:О:А,О,Е,И", "ЗАГ_Р:A:А,О,Е,И", "ПОГ_РЕЛЕЦ:О:А,О,Е,И", "РАЗГ_Р:A:А,О,Е,И", "Г_РЕЛКА:О:А,О,Е,И", "ВЫГ_РКИ:A:А,О,Е,И", "ПРИГ_РЬ:A:А,О,Е,И", "Г_РЮЧИЙ:О:А,О,Е,И", "УГ_РНЫЙ:О:А,О,Е,И", "ОГ_РОК:О:А,О,Е,И", "К_САТЬСЯ:A:А,О,Е,И", "ПРИК_СНОВЕНИЕ:О:А,О,Е,И", "К_САТЕЛЬНАЯ:A:А,О,Е,И", "ПРИК_СНУТЬСЯ:О:А,О,Е,И", "К_САНИЕ:A:А,О,Е,И", "НЕПР_КОСНОВЕННЫЙ:О:А,О,Е,И", "СОПР_КОСНОВЕНИЕ:О:А,О,Е,И", "СЛАГ_АЕМОЕ:A:А,О,Е,И", "ПРЕДЛ_ЖЕНИЕ:О:А,О,Е,И", "ИЗЛ_ЖЕНИЕ:О:А,О,Е,И", "ПОЛ_ГАТЬ:A:А,О,Е,И", "ПРИЛ_ГАТЕЛЬНОЕ:A:А,О,Е,И", "ПОЛ_ЖЕНИЕ:О:А,О,Е,И", "РАЗЛ_ЖИТЬ:О:А,О,Е,И", "ОТЛ_ЖИТЬ:О:А,О,Е,И", "БЕЗОТЛ_ГАТЕЛЬНО:A:А,О,Е,И", "ПРЕДПОЛ_ЖИТЬ:О:А,О,Е,И", "В_НЕГРЕТ:И:И,Е,Я,А", "П_ЛИСАДНИК:A:А,О,Е,И", "ПР_ВИЛЕГИЯ:И:И,Е,Я,А", "ЭСТ_КАДА:A:А,О,Е,И", "АКК_МПАНЕМЕНТ:О:О,А,Е,И", "К_ЛЕЙДОСКОП:A:А,О,Е,И", "Д_ФИЦИТ:Е:Е,И,Я,А", "Д_ЗЕРТИР:Е:Е,И,Я,А", "К_РНАВАЛ:A:А,О,Е,И", "M_РИДИАН:Е:Е,И,Я,А", "П_НОРАМА:A:А,О,Е,И", "Д_ЛИКАТЕС:Е:Е,И,Я,А", "СТ_ПЕНДИЯ:И:И,Е,Я,А", "Т_РРИТОРИЯ:Е:Е,И,Я,А", "ЭКСП_РИМЕНТ:Е:Е,И,Я,А", "П_РИФЕРИЯ:Е:Е,И,Я,А", "Р_СТАВРАЦИЯ:Е:Е,И,Я,А", "Г_РНИЗОН:A:А,О,Е,И", "ОБ_ЯНИЕ:A:А,О,Е,И", "В_СТИБЮЛЬ:Е:Е,И,Я,А", "К_МПЛИМЕНТ:И:И,Е,Я,А", "ИНТЕЛЛИГ_НТ:Е:Е,И,Я,А", "ПЛ_ВЕЦ:О:А,О,Е,И", "ПЛ_ВЧИХА:О:А,О,Е,И", "ПОПЛ_ВОК:A:А,О,Е,И", "Р_СТЕНИЕ:A:A,О,Е,И", "ОТР_СЛЬ:A:А,О,Е,И", "ВЫР_ЩЕННЫЙ:A:А,О,Е,И", "Р_СТОВ:О:А,О,Е,И", "Р_СТИСЛАВ:О:А,О,Е,И", "ПОДР_СТОК:О:А,О,Е,И", "Р_СТОК:О:А,О,Е,И", "Р_ВНИНА:A:А,О,Е,И", "УР_ВЕНЬ:О:А,О,Е,И", "ПОДР_ВНЯТЬ:A:А,О,Е,И", "М_КАТЬ:A:А,О,Е,И", "ВЫМ_КНУТЬ:О:А,О,Е,И", "ТВ_РИТЬ:О:А,О,Е,И", "УТВ_РЬ:A:А,О,Е,И", "СК_КАТЬ:A:А,О,Е,И", "ВЫСК_ЧКА:О:А,О,Е,И", "БЛ_СТЕТЬ:Е:А,О,Е,И", "БЛ_СТАТЬ:И:А,О,Е,И", "ЗАМ_РАТЬ:И:А,О,Е,И", "ЗАМ_РЕТЬ:Е:А,О,Е,И", "АКВ_РЕЛЬ:A:А,О,Е,И", "В_ТЕРАН:Е:Е,И,Я,А", "Г_РЯЧИЙ:О:А,О,Е,И", "Д_РИЖЕР:И:И,Е,Я,А", "К_ТАСТРОФА:A:А,О,Е,И", "М_ЛОДИЯ:Е:Е,И,Я,А", "ОПТ_МИЗМ:И:И,Е,Я,А", "П_РИОД:Е:Е,И,Я,А", "Р_АЛЬНЫЙ:Е:Е,И,Я,А", "Ф_СТИВАЛЬ:Е:Е,И,Я,А", "ОБЛ_ГЧЕНИЕ:Е:Е,И,Я,А", "УПР_ВЛЯТЬ:A:А,О,Е,И", "СОЖ_ЛЕНИЕ:A:А,О,Е,И", "ОБ_ЗАТЕЛЬНО:Я:Я,Е,А,И", "ИНГР_ДИЕНТ:Е:Е,И,Я,А", "УВЛ_КАТЬ:Е:Е,И,Я,А"
+    ];
+
+    const nnBase = [
+        "ДЕРЕВЯ_ЫЙ:НН:Н,НН", "ОЛОВЯ_ЫЙ:НН:Н,НН", "СТЕКЛЯ_ЫЙ:НН:Н,НН", "Ю_ЫЙ:Н:Н,НН", "РУМЯ_ЫЙ:Н:Н,НН", "ТУМА_ЫЙ:НН:Н,НН", "КАРМА_ЫЙ:НН:Н,НН", "ДЛИ_ЫЙ:НН:Н,НН", "СТАРИ_ЫЙ:НН:Н,НН", "ПЕСЧА_ЫЙ:Н:Н,НН", "КОЖА_ЫЙ:Н:Н,НН", "ГЛИНЯ_ЫЙ:Н:Н,НН", "СЕРЕБРЯ_ЫЙ:Н:Н,НН", "ЛЕДЯ_ЫЙ:Н:Н,НН", "ЗВЕРИ_ЫЙ:Н:Н,НН", "УТРЕ_ИЙ:НН:Н,НН", "СОЛОМЕ_ЫЙ:НН:Н,НН", "ВЕТРЕ_ЫЙ:Н:Н,НН", "БЕЗВЕТРЕ_ЫЙ:НН:Н,НН", "ЦЕН_ЫЙ:НН:Н,НН", "ОБВЕТРЕ_ЫЙ:НН:Н,НН", "КОПЧЕ_ОСТИ:Н:Н,НН", "ПОКРАШЕ_ЫЙ:НН:Н,НН", "РАНЕ_ЫЙ:Н:Н,НН", "ИСТИН_ЫЙ:НН:Н,НН", "ДИКОВИН_ЫЙ:НН:Н,НН", "НЕЖДАН_ЫЙ:НН:Н,НН", "НЕГАДАН_ЫЙ:НН:Н,НН", "СМЫШЛЕН_ЫЙ:Н:Н,НН", "ПРИДАН_ОЕ (невесты):Н:Н,НН", "MАСЛЯ_ЫЙ:Н:Н,НН", "БАРА_ИЙ:Н:Н,НН", "ПИСА_ЫЙ:Н:Н,НН", "МАРИНОВА_ЫЙ:НН:Н,НН", "ЖЕЛА_ЫЙ:НН:Н,НН", "СВЯЩЕ_ЫЙ:НН:Н,НН", "КОВАН_ЫЙ:Н:Н,НН", "ЖЁВАН_ЫЙ:Н:Н,НН", "ЖАРЕ_ЫЙ:Н:Н,НН", "ПЕРЕЖАРЕ_ЫЙ:НН:Н,НН", "ЛУ_ЫЙ:НН:Н,НН", "ЧУГУ_ЫЙ:НН:Н,НН", "ДРЯН_ЫЙ:НН:Н,НН", "МАШИ_ЫЙ:НН:Н,НН", "ПЛЕ_ЫЙ:НН:Н,НН", "ОБЩИ_ЫЙ:НН:Н,НН", "ЗЕЛЁ_ЫЙ:Н:Н,НН", "ПРЯ_ЫЙ:Н:Н,НН", "ЕДИ_ЫЙ:Н:Н,НН", "СВИ_ОЙ:Н:Н,НН", "РЖАН_ОЙ:Н:Н,НН", "ТОРФЯН_ОЙ:Н:Н,НН", "ШЕРСТЯН_ОЙ:Н:Н,НН", "ЛИСТВЕ_ЫЙ:НН:Н,НН", "КАМЕ_ЫЙ:НН:Н,НН", "ВРЕМЕ_ЫЙ:НН:Н,НН", "ПЛАМЕ_ЫЙ:НН:Н,НН", "ИМЕН_ОЙ:НН:Н,НН", "СЕМЕН_ОЙ:НН:Н,НН", "ТРАВЯН_ОЙ:Н:Н,НН", "НЕПОСТОЯ_ЫЙ:НН:Н,НН", "ТОРЖЕСТВЕ_ЫЙ:НН:Н,НН", "ЗЕМЛЯН_ОЙ:Н:Н,НН", "ГРУЖЕ_ЫЙ:Н:Н,НН", "ВЫГРУЖЕ_ЫЙ:НН:Н,НН", "КАЗЁ_ЫЙ:НН:Н,НН", "ДИВА_ЫЙ:НН:Н,НН", "КУРИ_ЫЙ:Н:Н,НН", "КАРТИ_ЫЙ:НН:Н,НН", "СТРА_ЫЙ:НН:Н,НН", "УРАГА_ЫЙ:НН:Н,НН", "НЕЧА_ЫЙ:НН:Н,НН", "МГНОВЕ_ЫЙ:НН:Н,НН", "МАШИНОПИС_ЫЙ:Н:Н,НН", "ЭШЕЛО_ЫЙ:НН:Н,НН", "МИЛЛИО_ЫЙ:НН:Н,НН", "СМЕША_ЫЙ:НН:Н,НН", "ЗАМЕША_ЫЙ:НН:Н,НН", "KРАШЕ_ЫЙ:Н:Н,НН", "ВЫKРАШЕ_ЫЙ:НН:Н,НН", "БЕЛЁ_ЫЙ:Н:Н,НН", "СУШЁ_ЫЙ:Н:Н,НН", "ВЫСУШЕ_ЫЙ:НН:Н,НН", "ТУШЁ_ЫЙ:Н:Н,НН", "ЗАПЕЧЁ_ЫЙ:НН:Н,НН", "СОЛЁ_ЫЙ:Н:Н,НН", "ПОСОЛЕ_ЫЙ:НН:Н,НН", "ВЯЛЕ_ЫЙ:Н:Н,НН", "МОЩЁ_ЫЙ:Н:Н,НН", "ЗАМОЩЁ_ЫЙ:НН:Н,НН", "СДЕЛАН_ЫЙ:НН:Н,НН", "УСЛЫША_ЫЙ:НН:Н,НН", "УВИДЕН_ЫЙ:НН:Н,НН", "ЛИШЁ_ЫЙ:НН:Н,НН", "БРОШЕ_ЫЙ:НН:Н,НН", "КУПЛЕ_ЫЙ:НН:Н,НН", "РЕШЁ_ЫЙ:НН:Н,НН", "ПЛЕНЁ_ЫЙ:НН:Н,НН", "ОТЧАЯ_ЫЙ:НН:Н,НН", "ПЕЧЁ_ЫЙ:Н:Н,НН"
+    ];
+
+    const ppBase = [
+        "ПР_ТВОРИТЬ (дверь):И:Е,И", "ПР_ТВОРИТЬ (мечту):Е:Е,И", "ПР_БЫТЬ (в город):И:Е,И", "ПР_БЫТЬ (в городе):Е:Е,И", "ПР_КЛОНИТЬ (ветку):И:Е,И", "ПР_КЛОНИТЬ (колени):Е:Е,И", "ПР_СТУПИТЬ (закон):Е:Е,И", "ПР_СТУПИТЬ (к делу):И:Е,И",
+        "ПР_ОТКРЫТЬ:И:Е,И", "ПР_КРАСНЫЙ:Е:Е,И", "ПР_ШИТЬ:И:Е,И", "ПР_ШКОЛЬНЫЙ:И:Е,И", "ПР_ГРАДА:Е:Е,И", "ПР_ДОБРЫЙ:Е:Е,И", "ПР_ЕХАТЬ:И:Е,И", "ПР_СТУПНИК:Е:Е,И", "ПР_КЛЕИТЬ:И:Е,И", "ПР_МОРСКОЙ:И:Е,И", "ПР_ВРАТИТЬ:Е:Е,И", "ПР_ОДОЛЕТЬ:Е:Е,И", "ПР_РЫВАТЬ:Е:Е,И", "ПР_ПЯТСТВИЕ:Е:Е,И", "ПР_ЗИДЕНТ:Е:Е,И", "ПР_ВЕРЕДЛИВЫЙ:И:Е,И", "ПР_ОРИТЕТ:И:Е,И", "ПР_ВЕТ:И:Е,И", "ПР_ВЫЧКА:И:Е,И", "ПР_ЗРЕНИЕ:Е:Е,И", "ПР_ПОДАВАТЬ:Е:Е,И", "ПР_МЕР:И:Е,И", "ПР_БРЕЖНЫЙ:И:Е,И", "ПР_КЛЮЧЕНИЕ:И:Е,И", "ПР_СЯГА:И:Е,И", "ПР_ТЕНЗИЯ:Е:Е,И", "ПР_НЕБРЕГАТЬ:Е:Е,И", "ПР_ВЕРЕДНИЧАТЬ:И:Е,И", "ПР_БИВАТЬ:И:Е,И", "ПР_ПОДНЯТЬ:И:Е,И", "ПР_ГЛУШИТЬ:И:Е,И", "ПР_ОБРЕСТИ:И:Е,И", "ПР_СПОСОБИТЬ:И:Е,И", "ПР_РУЧИТЬ:И:Е,И", "ПР_УМНОЖИТЬ:И:Е,И", "ПР_ЗЕМЛИТЬСЯ:И:Е,И", "ПР_СТЫДИТЬ:И:Е,И", "ПР_СЛОНИТЬСЯ:И:Е,И", "ПР_ВЛЕЧЬ:И:Е,И", "ПР_ВЕТСТВИЕ:И:Е,И", "ПР_ГЛАСИТЬ:И:Е,И", "ПР_ЗЕНТ:Е:Е,И", "ПР_ЗИДИУМ:Е:Е,И", "ПР_ПАРАТ:Е:Е,И", "ПР_ПОНАДОБИТЬСЯ:Е:Е,И", "ПР_СЛЕДОВАТЬ:Е:Е,И", "ПР_УВЕЛИЧИТЬ:Е:Е,И", "ПР_УСПЕВАТЬ:Е:Е,И", "ПР_ТЕНДЕНТ:Е:Е,И", "ПР_ЦЕДЕНТ:Е:Е,И", "ПР_СТИЖ:Е:Е,И", "ПР_ВРАЩЕНИЕ:Е:Е,И", "ПР_ДАТЕЛЬ:Е:Е,И", "ПР_ПИНАНИЕ:Е:Е,И", "ПР_РЕКАТЬСЯ:Е:Е,И", "ПР_СЛОВУТЫЙ:Е:Е,И", "ПР_ВЫСИТЬ:Е:Е,И", "ПР_ГРАДИТЬ:Е:Е,И", "ПР_ДАВАТЬ:Е:Е,И", "ПР_КЛОНЕНИЕ:Е:Е,И", "ПР_ОБРАЗОВАТЬ:Е:Е,И", "ПР_ОБРАЗ:Е:Е,И", "ПР_ОДОЛЕВАЕМЫЙ:Е:Е,И", "ПР_ПАСТЬ:И:Е,И", "ПР_ПЕВАТЬ:И:Е,И", "ПР_РЕКАТЬ:Е:Е,И", "ПР_СМЫКАТЬСЯ:Е:Е,И", "ПР_ТЯЖЕНИЕ:И:Е,И", "ПР_УМЕНЬШИТЬ:И:Е,И", "ПР_УНЫТЬ:И:Е,И", "ПР_ФЕКТУРА:Е:Е,И", "ПР_ХОТЬ:И:Е,И", "ПР_ЦЕПИТЬ:И:Е,И", "ПР_ЧУДЛИВЫЙ:И:Е,И", "ПР_ШЕСТВИЕ:И:Е,И", "ПР_ЩУРИТЬСЯ:И:Е,И", "ПР_ЮТИТЬ:И:Е,И", "ПР_ЯТНЫЙ:И:Е,И", "ПР_БЕДНЯТЬСЯ:И:Е,И", "ПР_ВОЛЖСКИЙ:И:Е,И", "ПР_ГОТОВИТЬ:И:Е,И", "ПР_ДАНОЕ:И:Е,И", "ПР_ДУМАТЬ:И:Е,И", "ПР_ЗЕМЛЕНИЕ:И:Е,И", "ПР_КАСАТЬСЯ:И:Е,И", "ПР_КРАТИТЬ:Е:Е,И", "ПР_ПЯТСТВОВАТЬ:Е:Е,И", "ПР_СМОТРЕТЬ:И:Е,И", "ПР_СТАНИЩЕ:И:Е,И", "ПР_ТЯГИВАТЬ:И:Е,И", "ПР_ШЕЛЬЦЕВ:И:Е,И", "ПР_УСПЕТЬ:Е:Е,И"
+    ];
+
+    const sBase = [
+        "ОБ_ЯВЛЕНИЕ:Ъ:Ъ,Ь", "В_ЮГА:Ь:Ъ,Ь", "ПОД_ЕЗД:Ъ:Ъ,Ь", "СОЛОВ_И:Ь:Ъ,Ь", "С_ЕЗД:Ъ:Ъ,Ь", "ОБ_ЕКТ:Ъ:Ъ,Ь", "СУБ_ЕКТ:Ъ:Ъ,Ь", "АД_ЮТАНТ:Ъ:Ъ,Ь", "ИН_ЕКЦИЯ:Ъ:Ъ,Ь", "БАР_ЕР:Ь:Ъ,Ь", "ПАВИЛ_ОН:Ь:Ь,Ъ", "ПРЕД_ЮБИЛЕЙНЫЙ:Ъ:Ъ,Ь", "МЕЖ_ЯРУСНЫЙ:Ъ:Ъ,Ь", "ОБЕЗ_ЯНА:Ь:Ъ,Ь", "ПОД_ЯЧИЙ:Ь:Ь,Ъ", "ПОД_ЯРЕМНЫЙ:Ъ:Ъ,Ь", "ПОД_ЁМ:Ъ:Ъ,Ь", "С_ЯЗВИТЬ:Ъ:Ъ,Ь", "В_ЕДЛИВЫЙ:Ъ:Ъ,Ь", "Б_ЮЩИЙ:Ь:Ь,Ъ", "ИНТЕРВ_Ю:Ь:Ь,Ъ", "БУЛ_ОН:Ь:Ь,Ъ", "КОМП_ЮТЕР:Ь:Ь,Ъ", "ТЬЕР_И:Ь:Ь,Ъ", "АР_ЕРГАРД:Ь:Ь,Ъ", "ТРЁХ_ЯРУСНЫЙ:Ъ:Ъ,Ь", "Д_ЯК:Ь:Ь,Ъ", "П_ЕДЕСТАЛ:Ь:Ь,Ъ", "В_ЮН:Ь:Ь,Ъ", "Ш_ЮТ:Ь:Ь,Ъ", "Л_ЮТ:Ь:Ь,Ъ", "С_ЕМ:Ъ:Ъ,Ь", "С_ЁЖИТЬСЯ:Ъ:Ъ,Ь", "ПОД_ЯВИТЬСЯ:Ъ:Ъ,Ь", "РАЗ_ЯРЁННЫЙ:Ъ:Ъ,Ь", "ТРАНС_ЕВРОПЕЙСКИЙ:Ъ:Ъ,Ь", "КОН_ЮНКТУРА:Ъ:Ъ,Ь", "ОБ_ЯТИЕ:Ъ:Ъ,Ь", "СУБ_ЯДЕРНЫЙ:Ъ:Ь,Ъ", "ПОД_ЯЗЫЧНЫЙ:Ъ:Ъ,Ь", "ИЗ_ЯТЬ:Ъ:Ъ,Ь", "В_ЮЧНЫЙ:Ь:Ъ,Ь", "РУЧ_И:Ь:Ъ,Ь", "СУД_Я:Ь:Ь,Ъ", "ДВУХ_ЯКОРНЫЙ:Ъ:Ъ,Ь", "ЧЕТЫРЕХ_ЯРУСНЫЙ:Ъ:Ъ,Ь", "ИЗ_ЯН:Ъ:Ъ,Ь", "Р_ЯНО:Ь:Ь,Ъ", "ТАТ_ЯНА:Ь:Ъ,Ъ", "П_ЕСА:Ь:Ь,Ъ", "МЫШ_ЯК:Ъ:Ъ,Ь", "В_ЮЩИЙСЯ:Ь:Ь,Ъ", "КУР_ЕР:Ь:Ь,Ъ", "ПОД_ЕЗДНОЙ:Ъ:Ъ,Ь", "ФЕЛЬД_ЕГЕРЬ:Ъ:Ъ,Ь", "Б_ЕТ:Ь:Ь,Ъ", "Д_ЯВОЛ:Ь:Ь,Ъ", "ОБ_ЯТЬ:Ъ:Ъ,Ь", "ПОД_ЕМНИК:Ъ:Ъ,Ь", "С_ЕСТЬ:Ъ:Ъ,Ь", "С_ЕМКА:Ъ:Ъ,Ь", "В_ЮНОК:Ь:Ь,Ъ", "СЕМ_Я:Ь:Ь,Ъ", "РУЖ_Е:Ь:Ь,Ъ", "ИЗ_ЯСНЕНИЕ:Ъ:Ъ,Ь", "ПРЕД_ЯВИТЕЛЬ:Ъ:Ъ,Ь", "РАЗ_ЕМ:Ъ:Ъ,Ь", "ОБ_ЕМ:Ъ:Ъ,Ь", "ИЗ_ЯЩНЫЙ:Ъ:Ъ,Ь", "РАЗ_ЕХАТЬСЯ:Ъ:Ъ,Ь", "ПОД_ЕХАТЬ:Ъ:Ъ,Ь", "ОБ_ЕДИНЕНИЕ:Ъ:Ъ,Ь", "РАЗ_ЯСНИТЬ:Ъ:Ъ,Ь", "СВЕРХ_ЕСТЕСТВЕННЫЙ:Ъ:Ъ,Ь", "ДВУХ_ЯРУСНЫЙ:Ъ:Ъ,Ь", "В_ЕЗД:Ъ:Ъ,Ь", "ИЗ_ЯТЫЙ:Ъ:Ъ,Ь", "ПОД_ЯЗЫКОВЫЙ:Ъ:Ъ,Ь", "ОТ_ЯВЛЕННЫЙ:Ъ:Ъ,Ь", "РАЗ_ЕМНЫЙ:Ъ:Ъ,Ь", "БЕЗ_ЯДЕРНЫЙ:Ъ:Ъ,Ь", "С_ЕХАТЬ:Ъ:Ъ,Ь", "ПОД_ЕСТЬ:Ъ:Ъ,Ь", "ОБ_ЕЗДКА:Ъ:Ъ,Ь", "ПРЕД_ЯВЛЕНИЕ:Ъ:Ъ,Ь", "ИН_ЕКЦИОННЫЙ:Ъ:Ъ,Ь", "СУБ_ЕКТИВНЫЙ:Ъ:Ъ,Ь", "ОБ_ЕКТИВНЫЙ:Ъ:Ъ,Ь", "ТРЕХ_ЯДЕРНЫЙ:Ъ:Ъ,Ь", "ЛИСТ_Я:Ь:Ъ,Ь", "БРАТ_Я:Ь:Ъ,Ь", "СТУЛЬ_Я:Ь:Ъ,Ь", "ПЕР_Я:Ь:Ъ,Ь", "КРЫЛЬ_Я:Ь:Ъ,Ь", "РУЧ_ЕЙ:Ь:Ъ,Ь", "ВОРОБ_И:Ь:Ъ,Ь", "МУРАВ_И:Ь:Ъ,Ь", "НОЧ_Ю:Ь:Ь,Ъ", "ОСЕН_Ю:Ь:Ь,Ъ", "ГРЯЗ_Ю:Ь:Ь,Ъ", "ПЛАТ_Е:Ь:Ь,Ъ"
+    ];
+
+    const neBase = [
+        "(НЕ)СКАЗАННЫЙ:Слитно:Слитно,Раздельно", "(НЕ)СКАЗАННЫЙ (кем-то):Раздельно:Слитно,Раздельно", "(НЕ)ДОПИСАННЫЙ:Слитно:Слитно,Раздельно", "(НЕ)ДОПИСАННЫЙ (автором):Раздельно:Слитно,Раздельно", "(НЕ)СЛЫШНО:Слитно:Слитно,Раздельно", "(НЕ)СЛЫШНО (никуда):Раздельно:Слитно,Раздельно", "ОТНЮДЬ (НЕ)ИНТЕРЕСНО:Раздельно:Слитно,Раздельно", "(НЕ)СМЕШНО:Слитно:Слитно,Раздельно",
+        "(НЕ)РЯХА:Слитно:Слитно,Раздельно", "(НЕ)БЫЛ:Раздельно:Слитно,Раздельно", "(НЕ)ГОДУЯ:Слитно:Слитно,Раздельно", "ДАЛЕКО (НЕ)ПРОСТОЙ:Раздельно:Слитно,Раздельно", "(НЕ)ПРОЧИТАННАЯ МНОЮ КНИГА:Раздельно:Слитно,Раздельно", "(НЕ)ПРАВДА, А ЛОЖЬ:Раздельно:Слитно,Раздельно", "(НЕ)ВЫСОКИЙ, НО ХОЛОДНЫЙ:Слитно:Слитно,Раздельно", "(НЕ)ВЕЖДА:Слитно:Слитно,Раздельно", "(НЕ)ОТКУДА:Слитно:Слитно,Раздельно", "(НЕ)КТО:Слитно:Слитно,Раздельно", "(НЕ)С КЕМ:Раздельно:Слитно,Раздельно", "(НЕ)ДОУМЕВАТЬ:Слитно:Слитно,Раздельно", "(НЕ)РАД:Раздельно:Слитно,Раздельно", "ВОВСЕ (НЕ)ДРУГ:Раздельно:Слитно,Раздельно", "(НЕ)ГДЕ:Слитно:Слитно,Раздельно", "(НЕ)ВЕСТЬ:Слитно:Слитно,Раздельно", "(НЕ)ОХОТА:Слитно:Слитно,Раздельно", "(НЕ)ЗАЧЕМ:Слитно:Слитно,Раздельно", "(НЕ)КАК:Раздельно:Слитно,Раздельно", "(НЕ)ХУЖЕ:Раздельно:Слитно,Раздельно", "(НЕ)МЕНЬШЕ:Раздельно:Слитно,Раздельно", "(НЕ)БОЛЬШЕ:Раздельно:Слитно,Раздельно", "(НЕ)МОЖЕТ:Раздельно:Слитно,Раздельно", "(НЕ)ПИШЕТ:Раздельно:Слитно,Раздельно", "(НЕ)СЛУШАЯ:Раздельно:Слитно,Раздельно", "(НЕ)СМОТРЯ ПО СТОРОНАМ:Раздельно:Слитно,Раздельно", "(НЕ)СМОТРЯ НА ДОЖДЬ:Слитно:Слитно,Раздельно", "(НЕ)ИНТЕРЕСНО:Слитно:Слитно,Раздельно", "(НЕ)ПОНЯТНО:Слитно:Слитно,Раздельно", "ОТНЮДЬ (НЕ)ВЕРНО:Раздельно:Слитно,Раздельно", "НИЧУТЬ (НЕ)СМЕШНО:Раздельно:Слитно,Раздельно", "(НЕ)ПРИЯТНЫЙ:Слитно:Слитно,Раздельно", "(НЕ)БОЛЬШОЙ:Слитно:Слитно,Раздельно", "(НЕ)ВКУСНЫЙ:Слитно:Слитно,Раздельно", "(НЕ)ХОРОШО:Слитно:Слитно,Раздельно", "(НЕ)ПЛОХО:Слитно:Слитно,Раздельно", "(НЕ)ДОРОГО:Слитно:Слитно,Раздельно", "(НЕ)МНОГО:Слитно:Слитно,Раздельно", "(НЕ)КТО ИНОЙ, КАК:Раздельно:Слитно,Раздельно", "(НЕ)ЧТО ИНОЕ, КАК:Раздельно:Слитно,Раздельно", "(НЕ)РАЗ:Раздельно:Слитно,Раздельно", "(НЕ)ОДИН:Раздельно:Слитно,Раздельно", "(НЕ)МЕДЛЕННО:Слитно:Слитно,Раздельно", "(НЕ)ИЗБЕЖНО:Слитно:Слитно,Раздельно", "(НЕ)УКЛЮЖИЙ:Слитно:Слитно,Раздельно", "(НЕ)БРЕЖНЫЙ:Слитно:Слитно,Раздельно", "(НЕ)НАВИДЕТЬ:Слитно:Слитно,Раздельно", "(НЕ)ВОЛИТЬ:Слитно:Слитно,Раздельно", "(НЕ)ДОМОГАТЬ:Слитно:Слитно,Раздельно", "(НЕ)КРАСИВЫЙ, А УРОДЛИВЫЙ:Раздельно:Слитно,Раздельно", "(НЕ)ГРОМКИЙ, НО ПРИЯТНЫЙ:Слитно:Слитно,Раздельно", "(НЕ)ВИНОВАТ:Раздельно:Слитно,Раздельно", "(НЕ)ДОЛЖЕН:Раздельно:Слитно,Раздельно", "(НЕ)ОБЯЗАН:Раздельно:Слитно,Раздельно", "(НЕ)НУЖНО:Раздельно:Слитно,Раздельно", "(НЕ)ГОТОВ:Раздельно:Слитно,Раздельно", "(НЕ)СОГЛАСЕН:Раздельно:Слитно,Раздельно", "(НЕ)НАМЕРЕН:Раздельно:Слитно,Раздельно", "(НЕ)СПОСОБЕН:Раздельно:Слитно,Раздельно", "(НЕ)ТУТ:Раздельно:Слитно,Раздельно", "(НЕ)ЗДЕСЬ:Раздельно:Слитно,Раздельно", "(НЕ)ТАК:Раздельно:Слитно,Раздельно", "(НЕ)ВСЕГДА:Раздельно:Слитно,Раздельно", "(НЕ)СОВСЕМ:Раздельно:Слитно,Раздельно", "(НЕ)ОЧЕНЬ:Раздельно:Слитно,Раздельно", "(НЕ)ТОЛЬКО:Раздельно:Слитно,Раздельно", "(НЕ)КТО-ЛИБО:Раздельно:Слитно,Раздельно", "(НЕ)ВАШ:Раздельно:Слитно,Раздельно", "(НЕ)ПЯТЫЙ:Раздельно:Слитно,Раздельно", "(НЕ)ОДИННАДЦАТЫЙ:Раздельно:Слитно,Раздельно", "(НЕ)СТО:Раздельно:Слитно,Раздельно", "(НЕ)ВЫПОЛНЕН:Раздельно:Слитно,Раздельно", "(НЕ)ЗАКРЫТО:Раздельно:Слитно,Раздельно", "(НЕ)ОКОНЧЕН:Раздельно:Слитно,Раздельно", "(НЕ)СКАЗАНО:Раздельно:Слитно,Раздельно", "(НЕ)ГРОМКО:Слитно:Слитно,Раздельно", "(НЕ)ВЫСОКО:Слитно:Слитно,Раздельно", "(НЕ)ДАЛЕКО:Слитно:Слитно,Раздельно", "(НЕ)ДАЛЕКО, А БЛИЗКО:Раздельно:Слитно,Раздельно", "(НЕ)ВДАЛЕКЕ:Слитно:Слитно,Раздельно", "(НЕ)ДАРОМ:Слитно:Слитно,Раздельно", "(НЕ)ХОТЯ:Раздельно:Слитно,Раздельно", "(НЕ)СПЕША:Раздельно:Слитно,Раздельно", "(НЕ)УМЕЯ:Раздельно:Слитно,Раздельно", "(НЕ)ЗНАЯ:Раздельно:Слитно,Раздельно", "(НЕ)ДЕЛАЯ:Раздельно:Слитно,Раздельно", "(НЕ)ТРОНУТ:Раздельно:Слитно,Раздельно", "(НЕ)МОЙ:Раздельно:Слитно,Раздельно", "(НЕ)ТОТ:Раздельно:Слитно,Раздельно", "(НЕ)ЭТОТ:Раздельно:Слитно,Раздельно", "(НЕ)КТО ДРУГОЙ, КАК:Раздельно:Слитно,Раздельно", "(НЕ)К ЧЕМУ:Раздельно:Слитно,Раздельно", "(НЕ)ЗА ЧТО:Раздельно:Слитно,Раздельно"
+    ];
+
+    const wordBanks = {
+        vowels: vBase.map(s => { const a = s.split(':'); return {w:a[0], c:a[1], v:a[2].split(',')}; }),
+        nn: nnBase.map(s => { const a = s.split(':'); return {w:a[0], c:a[1], v:a[2].split(',')}; }),
+        prepri: ppBase.map(s => { const a = s.split(':'); return {w:a[0], c:a[1], v:a[2].split(',')}; }),
+        signs: sBase.map(s => { const a = s.split(':'); return {w:a[0], c:a[1], v:a[2].split(',')}; }),
+        ne: neBase.map(s => { const a = s.split(':'); return {w:a[0], c:a[1], v:a[2].split(',')}; })
+    };
+
+    // --- БАЗА ДАННЫХ СПРАВОЧНИКА ---
+    const rulesData = {
+        vowels: `<h3>Гласные в корне</h3><b>ЗАР / ЗОР:</b> Без ударения пишется А (зарница), под ударением — что слышится (зорька). <i>Искл.: зоревать.</i><br><br><b>ГАР / ГОР:</b> Без ударения пишется О (гореть), под ударением — А (загар). <i>Искл.: выгарки, пригарь.</i><br><br><b>КАС / КОС:</b> Пиши А, если дальше есть суффикс А (касаться), иначе пиши О (прикосновение).<br><br><b>ЛАГ / ЛОЖ:</b> Перед Г пишется А (слагаемое), перед Ж пишется О (предложение).<br><br><b>РАСТ / РАЩ / РОС:</b> Перед СТ и Щ пишется А (растение, выращенный), перед С — О (вырос). <i>Искл.: Ростов, Ростислав, росток, подросток, отрасль.</i><br><br><b>МАК / МОК:</b> МАК — погружать в жидкость (макать печенье), МОК — пропускать жидкость (вымокнуть под дождем).<br><br><b>ТВАР / ТВОР:</b> В безударном положении пишется О (творить). <i>Искл.: утварь.</i><br><br><b>СКАК / СКОЧ:</b> Перед К пишется А (скакать), перед Ч — О (выскочка).<br><br><b>БЛЕСТ/БЛИСТ, МЕР/МИР, СТЕЛ/СТИЛ:</b> Буква И пишется, только если после корня идет суффикс А (блистать, замирать). Иначе пишется Е (блестеть, замереть).`,
+        nn: `<h3>Н и НН в словах</h3><b>Две буквы НН пишутся:</b><br>1. На стыке основы на Н и суффикса Н (туман -> туманный).<br>2. Суффиксы -ОНН- / -ЕНН- в отыменных словах (утренний, соломенный). <i>Искл.: ветреный (но безветренный — НН).</i><br>3. В полных причастиях, если есть приставка (покрашенный), зависимые слова (жаренный на масле) или слово образовано от сов. вида (решённый).<br>4. Суффиксы -ова- / -ева- (маринованный).<br>5. Особые исключения: нежданный, негаданный, желанный, священный.<br><br><b>Одна буква Н пишется:</b><br>1. Суффиксы -АН- / -ЯН- / -ИН- в отыменных словах (кожаный, глиняный, звериный). <i>Искл.: деревянный, оловянный, стеклянный.</i><br>2. Отглагольные прилагательные без приставок и зависимых слов (жареный, крашеный).<br>3. Исключения, за которыми нужно следить: юный, румяный, свиной, смышлёный, приданое, кованый, жёваный.`,
+        prepri: `<h3>ПРЕ- и ПРИ-</h3><b>Приставка ПРИ- пишется при значениях:</b><br>• Пространственная близость (пришкольный, приморский).<br>• Приближение, присоединение (приехать, пришить, приклеить).<br>• Неполнота действия (приоткрыть, приподнять).<br>• Доведение действия до конца (приручить, придумать).<br><br><b>Приставка ПРЕ- пишется при значениях:</b><br>• Высокая степень качества (близко к "очень": прекрасный, предобрый).<br>• Близко к приставке ПЕРЕ- (преграда — перегородить, преступник — переступить).<br><br><b>⚠️ ВНИМАНИЕ НА КОНТЕКСТ (Омофоны):</b><br>• Прибыть (приехать куда-то) / Пребывать (находиться где-то).<br>• Притворить (прикрыть дверь) / Претворить (активировать мечту).<br>• Приклонить (нагнуть ветку) / Преклонить (колени в знак уважения).<br>• Приступить (начать дело) / Преступить (нарушить закон).`,
+        signs: `<h3>Ъ и Ь знаки</h3><b>Разделительный Ъ пишется:</b><br>• После приставок, оканчивающихся на согласную, перед гласными Е, Ё, Ю, Я (подъезд, съезд, объявление, предъявитель, разъём).<br>• В иноязычных словах после начальных элементов (объект, субъект, адъютант, инъекция).<br>• В сложных словах после двух-, трёх-, четырёх- (трёхъярусный).<br><i>Исключение для запоминания: изъян.</i><br><br><b>Разделительный Ь пишется:</b><br>• Внутри слова (в корне или перед окончанием), но строго НЕ после приставок, перед гласными Е, Ё, Ю, Я, И (вьюга, соловьи, обезьяна, компьютер, павильон, бульон).<br><i>Исключение: подьячий (пишется Ь, так как исторически образовано от "дьяк", а не от приставки под-).</i>`,
+        ne: `<h3>НЕ слитно / раздельно</h3><b>Слитно пишется:</b><br>• Без НЕ слово вообще не употребляется (неряха, негодуя, ненавидеть, неуклюжий).<br>• Существительные, прилагательные и наречия на -О, если их можно заменить синонимом без НЕ (неправда — ложь, небольшой — маленький, негромко — тихо).<br>• Полные причастия без зависимых слов (недописанный текст).<br><br><b>Раздельно пишется:</b><br>• Абсолютно всегда с глаголами и деепричастиями (не был, не зная, не спеша).<br>• Если в предложении есть явное противопоставление с союзом А (не правда, а ложь).<br>• С полными причастиями при наличии зависимых слов (не прочитанная МНОЮ книга) или если причастие в краткой форме (не выполнен, не закрыто).<br>• С усилительными словами: далеко не, отнюдь не, вовсе не, ничуть не (отнюдь не интересно, вовсе не друг).<br>• С краткими прилагательными, выражающими готовность или долженствование: не рад, не должен, не обязан, не готов.`
+    };
+
+    // --- ТЕХНИЧЕСКАЯ ЧАСТЬ ---
+    let gameLength = 25; 
+    let profileLength = 25; 
+
+    function setGameLength(len) {
+        gameLength = len;
+        document.querySelectorAll('.game-len-btn').forEach(btn => {
+            if (parseInt(btn.getAttribute('data-len')) === len) btn.classList.add('active');
+            else btn.classList.remove('active');
+        });
+    }
+
+    function changeProfileLength(len) {
+        profileLength = len;
+        document.querySelectorAll('.prof-len-btn').forEach(btn => {
+            var dLen = btn.getAttribute('data-len');
+            if (dLen && parseInt(dLen) === len) btn.classList.add('active');
+            else btn.classList.remove('active');
+        });
+        renderProfileData();
+    }
+
+    function goTo(id) {
+        document.querySelectorAll('.screen').forEach(s => {
+            s.style.display = 'none';
+        });
+        const targetScreen = document.getElementById(id);
+        if (targetScreen) {
+            targetScreen.style.display = 'flex';
+            targetScreen.style.opacity = '1';
+        }
+        if (id === 'settingsScreen') {
+            initSliders();
+        }
+    }
+
+    // Полноценно починенная кнопка Профиль: сначала открывает экран, потом рендерит данные
+    function showProfile() {
+        goTo('profileScreen');
+        try {
+            changeProfileLength(profileLength);
+        } catch(e) { console.log("Profile init error: " + e); }
+    }
+
+    function renderProfileData() {
+        try {
+            const modes = { vowels: "Гласные", nn: "Н / НН", prepri: "ПРЕ / ПРИ", signs: "Ъ / Ь", ne: "НЕ (слитно/раздельно)" };
+            const container = document.getElementById('profileData');
+            if (!container) return;
+            container.innerHTML = '';
+            for (let key in modes) {
+                const best = parseInt(localStorage.getItem('best_' + key + '_' + profileLength) || 0);
+                const mark = getMark(best, profileLength);
+                const markHtml = best > 0 ? `<span class="mark-val" style="color:${mark.color}">${mark.val} <small style="font-size:10px; opacity:0.7">(${best}/${profileLength})</small></span>` : `<span class="mark-val">0</span>`;
+                container.innerHTML += `<div class="profile-item"><span>${modes[key]}</span>${markHtml}</div>`;
+            }
+        } catch(e) { console.log("Profile render error: " + e); }
+    }
+
+    function openHandbook() {
+        goTo('handbookScreen');
+        showRule('vowels', document.querySelector('.hb-btn[data-mode="vowels"]'));
+    }
+
+    function showRule(mode, btn) {
+        document.querySelectorAll('.hb-btn').forEach(b => b.classList.remove('active'));
+        if(btn) btn.classList.add('active');
+        const container = document.getElementById('ruleTextContainer');
+        if (container) {
+            container.innerHTML = rulesData[mode];
+            container.scrollTop = 0;
+        }
+    }
+
+    function openModal() { document.getElementById('confirmModal').style.display = 'flex'; }
+    function closeModal() { document.getElementById('confirmModal').style.display = 'none'; }
+    function executeReset() {
+        const lengths = [25, 50, 100];
+        ['vowels', 'nn', 'prepri', 'signs', 'ne'].forEach(m => {
+            lengths.forEach(l => localStorage.removeItem('best_' + m + '_' + l));
+        });
+        renderProfileData(); closeModal();
+    }
+
+    const canvas = document.getElementById('bgCanvas');
+    const ctx = canvas.getContext('2d');
+    let letters = [];
+    function initCanvas() {
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        letters = [];
+        for (let i = 0; i < 30; i++) letters.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, text: "АБВГДЕ"[Math.floor(Math.random()*6)], size: Math.random()*15+10, speed: Math.random()*0.3+0.1, opacity: Math.random()*0.1+0.05 });
+    }
+    function draw() {
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        letters.forEach(l => {
+            ctx.fillStyle = `rgba(150, 150, 255, ${l.opacity})`;
+            ctx.font = `bold ${l.size}px Arial`; ctx.fillText(l.text, l.x, l.y);
+            l.y -= l.speed; if (l.y < -20) l.y = canvas.height + 20;
+        });
+        requestAnimationFrame(draw);
+    }
+    window.addEventListener('resize', initCanvas); initCanvas(); draw();
+
+    function spawnParticles(x, y, color) {
+        for (let i = 0; i < 12; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle'; p.style.backgroundColor = color;
+            const size = Math.random() * 6 + 4;
+            p.style.width = size + 'px'; p.style.height = size + 'px';
+            p.style.left = x + 'px'; p.style.top = y + 'px';
+            document.body.appendChild(p);
+            const angle = Math.random() * Math.PI * 2;
+            const force = Math.random() * 8 + 3;
+            let curX = x, curY = y, vx = Math.cos(angle) * force, vy = Math.sin(angle) * force, gravity = 0.15, opacity = 1;
+            const anim = setInterval(() => {
+                curX += vx; curY += vy; vy += gravity; opacity -= 0.03;
+                p.style.left = curX + 'px'; p.style.top = curY + 'px'; p.style.opacity = opacity;
+                if (opacity <= 0) { clearInterval(anim); p.remove(); }
+            }, 16);
+        }
+    }
+
+    // --- ЛОГИКА ИГРЫ ---
+    let currentMode, score = 0, currentIdx = 0, isLocked = false, questions = [];
+
+    function getMark(currentScore, totalQuestions) {
+        if (!totalQuestions || totalQuestions === 0) return { val: 2, color: 'var(--mark-2)' };
+        const pct = (currentScore / totalQuestions) * 100;
+        if (pct >= 80) return { val: 5, color: 'var(--mark-5)' }; 
+        if (pct >= 60) return { val: 4, color: 'var(--mark-4)' }; 
+        if (pct >= 40) return { val: 3, color: 'var(--mark-3)' }; 
+        return { val: 2, color: 'var(--mark-2)' }; 
+    }
+
+    function startGame(mode) {
+        currentMode = mode; score = 0; currentIdx = 0; isLocked = false;
+        questions = [...wordBanks[mode]].sort(() => Math.random() - 0.5).slice(0, gameLength);
+        updateDisplay(); goTo('gameScreen'); renderQuestion();
+    }
+
+    function updateDisplay() {
+        document.getElementById('score').innerText = score;
+        document.getElementById('bestScore').innerText = localStorage.getItem('best_' + currentMode + '_' + gameLength) || 0;
+        document.getElementById('qCounter').innerText = `${currentIdx + 1}/${questions.length}`;
+    }
+
+    function renderQuestion() {
+        const q = questions[currentIdx];
+        document.getElementById('wordDisplay').innerText = q.w;
+        const container = document.getElementById('variantsContainer');
+        container.innerHTML = '';
+
+        const shuffledVariants = [...q.v];
+        for (let i = shuffledVariants.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffledVariants[i], shuffledVariants[j]] = [shuffledVariants[j], shuffledVariants[i]];
+        }
+
+        shuffledVariants.forEach(v => {
+            const btn = document.createElement('button');
+            btn.className = 'btn variant-btn'; btn.innerText = v;
+            btn.onclick = (e) => checkAnswer(v, btn, e.clientX, e.clientY);
+            container.appendChild(btn);
+        });
+        isLocked = false;
+    }
+
+    function checkAnswer(ans, btn, x, y) {
+        if (isLocked) return; isLocked = true;
+        const q = questions[currentIdx];
+        const rect = btn.getBoundingClientRect();
+        const posX = x || (rect.left + rect.width/2);
+        const posY = y || (rect.top + rect.height/2);
+
+        if (ans === q.c) {
+            btn.classList.add('correct'); spawnParticles(posX, posY, '#2ecc71');
+            playSound('correctSound', 'correct'); 
+            score++;
+            setTimeout(() => {
+                currentIdx++;
+                if (currentIdx < questions.length) {
+                    updateDisplay(); renderQuestion();
+                } else {
+                    updateDisplay(); finish();
+                }
+            }, 400);
+        } else {
+            btn.classList.add('wrong'); spawnParticles(posX, posY, '#e74c3c');
+            playSound('wrongSound', 'wrong'); 
+            document.querySelectorAll('.variant-btn').forEach(b => { if (b.innerText === q.c) b.classList.add('correct'); });
+            setTimeout(() => {
+                currentIdx++;
+                if (currentIdx < questions.length) {
+                    updateDisplay(); renderQuestion();
+                } else {
+                    updateDisplay(); finish();
+                }
+            }, 1200);
+        }
+    }
+
+    function finish() {
+        const bestKey = 'best_' + currentMode + '_' + gameLength;
+        const currentBest = parseInt(localStorage.getItem(bestKey) || 0);
+        if (score > currentBest) {
+            localStorage.setItem(bestKey, score);
+            document.getElementById('recordToast').classList.add('show');
+            setTimeout(() => document.getElementById('recordToast').classList.remove('show'), 3000);
+        }
+        const mark = getMark(score, questions.length);
+        document.getElementById('wordDisplay').innerText = "КОНЕЦ ИГРЫ";
+        document.getElementById('variantsContainer').innerHTML = `
+            <div class="final-mark-container" style="grid-column: 1/-1;">
+                <p style="color:var(--text-color); font-weight:bold; font-size: 14px;">ОЦЕНКА:</p>
+                <div class="final-mark-circle" style="background-color:${mark.color}">${mark.val}</div>
+                <p style="color:var(--stat-label-color); font-size: 13px;">Верно: ${score} из ${questions.length}</p>
+            </div>
+        `;
+    }
+
+    document.getElementById('restartBtn').onclick = () => startGame(currentMode);
+
+    // --- АУДИОСИСТЕМА ИГРЫ (ОБНОВЛЁННЫЙ МИКШЕР С JS-ЗАЦИКЛИВАНИЕМ) ---
+    const bgMusic = document.getElementById('bgMusic');
+
+    // Начальная громкость по умолчанию жестко выставлена на 15% (0.15)
+    let volumes = {
+        music: localStorage.getItem('vol_music') !== null ? parseFloat(localStorage.getItem('vol_music')) : 0.15,
+        click: localStorage.getItem('vol_click') !== null ? parseFloat(localStorage.getItem('vol_click')) : 0.15,
+        correct: localStorage.getItem('vol_correct') !== null ? parseFloat(localStorage.getItem('vol_correct')) : 0.15,
+        wrong: localStorage.getItem('vol_wrong') !== null ? parseFloat(localStorage.getItem('vol_wrong')) : 0.15
+    };
+
+    // ПРИНУДИТЕЛЬНОЕ ЖЕСТКОЕ ЗАЦИКЛИВАНИЕ ДЛЯ ANDROID APK (БЕЗ LOOP АТРИБУТА)
+    if (bgMusic) {
+        bgMusic.addEventListener('ended', function() {
+            try {
+                this.currentTime = 0;
+                this.volume = volumes.music;
+                var p = this.play();
+                if (p !== undefined) { p.catch(() => {}); }
+            } catch(e) { console.log("Loop event crash blocked: " + e); }
+        }, false);
+    }
+
+    function initSliders() {
+        for (let key in volumes) {
+            const valPercent = Math.round(volumes[key] * 100);
+            const slider = document.getElementById('slider_' + key);
+            const display = document.getElementById('val_' + key);
+            if (slider) slider.value = valPercent;
+            if (display) display.innerText = valPercent + '%';
+        }
+        try { if (bgMusic) bgMusic.volume = volumes.music; } catch(e){}
+    }
+
+    function updateVol(type, val) {
+        const volumeVal = val / 100;
+        volumes[type] = volumeVal;
+        localStorage.setItem('vol_' + type, volumeVal);
+        document.getElementById('val_' + type).innerText = val + '%';
+        try {
+            if (type === 'music' && bgMusic) bgMusic.volume = volumeVal;
+        } catch(e){}
+    }
+
+    function resetSettings() {
+        for (let key in volumes) {
+            volumes[key] = 0.15;
+            localStorage.setItem('vol_' + key, 0.15);
+        }
+        initSliders();
+        playSound('clickSound', 'click');
+    }
+
+    function playSound(audioId, type) {
+        try {
+            const audioEl = document.getElementById(audioId);
+            if (!audioEl) return;
+            
+            audioEl.volume = volumes[type] !== undefined ? volumes[type] : 0.15;
+            if (audioEl.readyState > 0) {
+                audioEl.currentTime = 0;
+            }
+            var p = audioEl.play();
+            if (p !== undefined) { p.catch(() => {}); }
+        } catch (e) {
+            console.log("Audio skipped safely: " + e);
+        }
+    }
+
+    document.addEventListener('click', () => {
+        try {
+            if (bgMusic && bgMusic.paused) {
+                bgMusic.volume = volumes.music;
+                var p = bgMusic.play();
+                if (p !== undefined) { p.catch(() => {}); }
+            }
+        } catch(e){}
+    }, { once: true });
+
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('btn') && !e.target.classList.contains('variant-btn')) {
+            playSound('clickSound', 'click'); 
+        }
+    });
+
+    // --- СЦЕНАРИЙ ЗАСТАВКИ ИНТРО ---
+    window.addEventListener('load', () => {
+        const logo = document.getElementById('splashLogo');
+        const splash = document.getElementById('splashScreen');
+        
+        setTimeout(() => { 
+            if (logo) {
+                logo.style.opacity = '1'; 
+                logo.style.transform = 'scale(1)';
+            }
+        }, 400);
+        
+        setTimeout(() => { 
+            if (logo) logo.style.opacity = '0'; 
+        }, 2600);
+        
+        setTimeout(() => { 
+            if (splash) {
+                splash.style.opacity = '0';
+                setTimeout(() => {
+                    splash.style.display = 'none';
+                    goTo('mainMenu');
+                }, 600);
+            } else {
+                goTo('mainMenu');
+            }
+        }, 3200);
+    });
+</script>
+</body>
+</html>
