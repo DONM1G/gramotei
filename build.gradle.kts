@@ -1,10 +1,49 @@
-// Top-level build file where you can add configuration options common to all sub-projects/modules.
+
 plugins {
-    id("com.android.application") version "8.0.0" apply false
-    id("com.android.library") version "8.0.0" apply false
-         
+    id("com.android.application")
+    
 }
 
-tasks.register<Delete>("clean") {
-    delete(rootProject.buildDir)
+android {
+    namespace = "com.donmig.literacy"
+    compileSdk = 33
+    buildToolsVersion = "33.0.3"
+
+    defaultConfig {
+        applicationId = "com.donmig.literacy"
+        minSdk = 21
+        targetSdk = 33
+        versionCode = 1
+        versionName = "1.0"
+        
+        vectorDrawables { 
+            useSupportLibrary = true
+        }
+    }
+    
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+        }
+    }
+
+    buildFeatures {
+        viewBinding = true
+        
+    }
+    
+}
+
+dependencies {
+
+
+    implementation("androidx.appcompat:appcompat:1.6.1")
+    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+    implementation("com.google.android.material:material:1.9.0")
 }
